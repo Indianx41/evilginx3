@@ -170,7 +170,7 @@ func main() {
 		return
 	}
 
-	hp, _ := core.NewHttpProxy(cfg.GetServerBindIP(), cfg.GetHttpsPort(), cfg, crt_db, db, bl, *developer_mode)
+	hp, _ := core.NewHttpProxy("127.0.0.1", 8443, cfg, crt_db, db, bl, *developer_mode)
 	hp.Start()
 
 	t, err := core.NewTerminal(hp, cfg, crt_db, db, *developer_mode)
