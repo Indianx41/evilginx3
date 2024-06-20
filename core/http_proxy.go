@@ -1313,36 +1313,13 @@ func (p *HttpProxy) interceptRequest(req *http.Request, http_status int, body st
 }
 
 func (p *HttpProxy) javascriptRedirect(req *http.Request, rurl string) (*http.Request, *http.Response) {
-    // Basis-URL obfuskieren
-    obfuscatedURL := base64.StdEncoding.EncodeToString([]byte(rurl))
-    decodedFunctionName := "atob"  // JavaScript-Funktion zum Dekodieren von Base64
-    redirectFunction := "location" // Verwenden einer weniger offensichtlichen Methode zur Umleitung
-
-    // Zufälliges JavaScript-Element generieren
-    rand.Seed(time.Now().UnixNano())
-    varName := fmt.Sprintf("var%d", rand.Intn(1000))
-
-    // Dynamisch JavaScript generieren
-    js := fmt.Sprintf(`
-<html>
-<head>
-<meta name='referrer' content='no-referrer'>
-<script>
-var %s = '%s';
-%s.%s.href = %s('%s');
-</script>
-</head>
-<body></body>
-</html>
-`, varName, obfuscatedURL, redirectFunction, "top", decodedFunctionName, varName)
-
-    resp := goproxy.NewResponse(req, "text/html", http.StatusOK, js)
-    if resp != nil {
-        return req, resp
-    }
-    return req, nil
+	body := fmt.Sprintf("<html><head><meta name='referrer' content='no-referrer'><script>top.location.href='%s';</script></head><body></body></html>", rurl)
+	resp := goproxy.NewResponse(req, "text/html", http.StatusOK, body)
+	if resp != nil {
+		return req, resp
+	}
+	return req, nil
 }
-
 
 func (p *HttpProxy) injectJavascriptIntoBody(body []byte, script string, src_url string) []byte {
 	js_nonce_re := regexp.MustCompile(`(?i)<script.*nonce=['"]([^'"]*)`)
