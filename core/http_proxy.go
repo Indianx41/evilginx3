@@ -31,7 +31,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	crand "crypto/rand" // Für kryptografische Funktionen
     	mrand "math/rand"  // Für mathematische Zufallsfunktionen
 	
 	"golang.org/x/net/proxy"
