@@ -31,7 +31,8 @@ import (
 	"strings"
 	"sync"
 	"time"
-
+    	"math/rand"
+	
 	"golang.org/x/net/proxy"
 
 	"github.com/elazarl/goproxy"
